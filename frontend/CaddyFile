@@ -1,0 +1,16 @@
+:80 {
+    root * /srv
+    encode gzip zstd
+
+    # Proxy reverso para a API do 1001 Albums Generator
+    handle_path /api-1001/* {
+        rewrite * /api/v1/projects{path}
+        reverse_proxy https://1001albumsgenerator.com {
+            header_up Host 1001albumsgenerator.com
+        }
+    }
+
+    # SPA Fallback: rotas desconhecidas servem o index.html
+    try_files {path} /index.html
+    file_server
+}

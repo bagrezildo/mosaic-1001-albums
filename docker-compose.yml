@@ -1,0 +1,15 @@
+services:
+  mosaic-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mosaic-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - web_network
+
+networks:
+  web_network:
+    external: true
