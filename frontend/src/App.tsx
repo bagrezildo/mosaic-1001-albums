@@ -4,6 +4,7 @@ import initialAlbumsData from './data/albums.json';
 import { AlbumCard } from './components/AlbumCard';
 import { TodayHero } from './components/TodayHero';
 import { NextAlbumCountdown } from './components/NextAlbumCountdown';
+import { DenseMosaic } from './components/DenseMosaic';
 
 const DECADES = [
   { label: 'Todas', value: 'all' },
@@ -42,12 +43,22 @@ export default function App() {
     }
   });
 
-  // Filtros
+  // Filtros e ordenação
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [selectedDecade, setSelectedDecade] = useState<DecadeValue>('all');
-  const [filterMode, setFilterMode] = useState<'all' | 'listened' | 'pending'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'pending' | 'listened'>('all');
   const [historySortDirection, setHistorySortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Modo de visualização (Cards vs Mural Denso)
+  const [viewMode, setViewMode] = useState<'cards' | 'mosaic'>(() => {
+    return (localStorage.getItem('mosaic_view_mode') as 'cards' | 'mosaic') || 'cards';
+  });
+
+  const handleSetViewMode = (mode: 'cards' | 'mosaic') => {
+    setViewMode(mode);
+    localStorage.setItem('mosaic_view_mode', mode);
+  };
 
   useEffect(() => {
     if (!projectName) return;
@@ -147,7 +158,7 @@ export default function App() {
     });
   }, [manualListenedMap]);
 
-  // Extração de gêneros únicos
+  // Extração de gêneros únicos ordenada por frequência
   const availableGenres = useMemo(() => {
     const counts: Record<string, number> = {};
     initialAlbumsData.forEach((a) => {
@@ -161,7 +172,7 @@ export default function App() {
       .map(([name, count]) => ({ name, count }));
   }, []);
 
-  // Status do álbum de hoje
+  // Status do álbum do dia
   const todayStatus = useMemo(() => {
     if (!todayAlbum) return { isListened: false, rating: undefined };
 
@@ -246,20 +257,17 @@ export default function App() {
     setRefreshTrigger((prev) => prev + 1);
   };
 
-  // Filtragem e Ordenação combinadas
+  // Filtragem e Ordenação
   const filteredAlbums = useMemo(() => {
     const result = albums.filter((album) => {
-      // 1. Busca textual
       const matchesSearch =
         album.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         album.artist.toLowerCase().includes(searchTerm.toLowerCase());
       if (!matchesSearch) return false;
 
-      // 2. Status de escuta
       if (filterMode === 'listened' && !album.isListened) return false;
       if (filterMode === 'pending' && album.isListened) return false;
 
-      // 3. Gênero
       if (selectedGenre !== 'all') {
         const hasGenre = album.genres?.some(
           (g) => g.toLowerCase() === selectedGenre.toLowerCase()
@@ -267,7 +275,6 @@ export default function App() {
         if (!hasGenre) return false;
       }
 
-      // 4. Década de Lançamento
       if (selectedDecade !== 'all') {
         const y = album.year;
         if (selectedDecade === '50s' && y >= 1960) return false;
@@ -282,7 +289,6 @@ export default function App() {
       return true;
     });
 
-    // Se estiver filtrado por "Ouvidos", ordena cronologicamente pelo histórico
     if (filterMode === 'listened') {
       return [...result].sort((a, b) => {
         const parseTime = (dateStr?: string) => {
@@ -388,7 +394,7 @@ export default function App() {
           />
         )}
 
-        {/* Barra de Filtros: Linha 1 (Busca, Gênero, Status e Histórico) */}
+        {/* Barra de Filtros: Linha 1 (Busca, Gênero, Status, Histórico e Alternador de Visão) */}
         <div className="space-y-3 pt-2">
           <div className="flex flex-col sm:flex-row gap-2.5">
             <input
@@ -399,7 +405,6 @@ export default function App() {
               className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
             />
 
-            {/* Dropdown de Gênero */}
             <select
               value={selectedGenre}
               onChange={(e) => setSelectedGenre(e.target.value)}
@@ -413,7 +418,6 @@ export default function App() {
               ))}
             </select>
 
-            {/* Status: Todos, Pendentes, Ouvidos */}
             <div className="flex flex-wrap gap-1.5 items-center">
               {(['all', 'pending', 'listened'] as const).map((mode) => (
                 <button
@@ -445,6 +449,36 @@ export default function App() {
                   </span>
                 </button>
               )}
+
+              {/* Alternador de Visualização: Cards vs Mural Denso */}
+              <div className="flex items-center bg-neutral-900 border border-neutral-800 rounded-lg p-0.5 ml-auto sm:ml-0">
+                <button
+                  onClick={() => handleSetViewMode('cards')}
+                  title="Visualização em Cards detalhados"
+                  className={`p-1.5 rounded-md transition ${
+                    viewMode === 'cards'
+                      ? 'bg-neutral-800 text-emerald-400'
+                      : 'text-neutral-500 hover:text-neutral-300'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => handleSetViewMode('mosaic')}
+                  title="Modo Mosaico Denso (Mini-tiles)"
+                  className={`p-1.5 rounded-md transition ${
+                    viewMode === 'mosaic'
+                      ? 'bg-neutral-800 text-emerald-400'
+                      : 'text-neutral-500 hover:text-neutral-300'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 3h4v4H3zm7 0h4v4h-4zm7 0h4v4h-4zM3 10h4v4H3zm7 0h4v4h-4zm7 0h4v4h-4zM3 17h4v4H3zm7 0h4v4h-4zm7 0h4v4h-4z"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -486,16 +520,23 @@ export default function App() {
           </div>
         </div>
 
-        {/* Grade do Mosaico */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
-          {filteredAlbums.map((album) => (
-            <AlbumCard
-              key={album.id}
-              album={album}
-              onToggleListen={handleToggleGridListen}
-            />
-          ))}
-        </div>
+        {/* Grade de Cards ou Mural Denso */}
+        {viewMode === 'cards' ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
+            {filteredAlbums.map((album) => (
+              <AlbumCard
+                key={album.id}
+                album={album}
+                onToggleListen={handleToggleGridListen}
+              />
+            ))}
+          </div>
+        ) : (
+          <DenseMosaic
+            albums={filteredAlbums}
+            onToggleListen={handleToggleGridListen}
+          />
+        )}
       </div>
     </div>
   );
