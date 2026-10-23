@@ -69,13 +69,18 @@ async function run() {
         imageUrl = 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=400&auto=format&fit=crop&q=60';
       }
 
+      // Extrai os gêneros cadastrados
+      const rawGenres = item.genres || [];
+      const genres = Array.isArray(rawGenres) ? rawGenres.filter(Boolean) : [];
+
       return {
         id: String(item._id || item.id || index + 1),
         name: String(name).trim(),
         artist: String(artist).trim(),
         year: isNaN(year) ? 1970 : year,
         imageUrl: imageUrl.trim(),
-        spotifyId: spotifyId
+        spotifyId: spotifyId,
+        genres: genres
       };
     });
 

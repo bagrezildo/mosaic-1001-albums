@@ -5,9 +5,9 @@ export interface Album {
   year: number;
   imageUrl: string;
   spotifyId: string;
-  // Campos de controle pessoal:
+  genres?: string[];
   isListened?: boolean;
-  rating?: number; // 1 a 5 estrelas
+  rating?: number;
   listenedAt?: string;
   review?: string;
 }
