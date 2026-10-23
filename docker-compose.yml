@@ -10,6 +10,20 @@ services:
     networks:
       - web_network
 
+  mosaic-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mosaic-backend
+    restart: unless-stopped
+    expose:
+      - "4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    networks:
+      - web_network
+
 networks:
   web_network:
     external: true
